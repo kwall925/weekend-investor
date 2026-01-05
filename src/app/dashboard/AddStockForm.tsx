@@ -49,24 +49,24 @@ export default function AddStockForm() {
 
   return (
     <div className="rounded-xl bg-white p-8 shadow-lg">
-      <h2 className="mb-6 text-2xl font-semibold">Add a Stock</h2>
+      <h2 className="mb-6 text-2xl text-black font-semibold">Add a Stock</h2>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label className="block text-sm font-medium text-gray-700">Ticker</label>
+          <label className="block text-sm text-black font-medium text-gray-700">Ticker</label>
           <input
             type="text"
             value={ticker}
             onChange={(e) => setTicker(e.target.value)}
             placeholder="AAPL"
             required
-            className="mt-1 w-full rounded-lg border border-gray-300 px-4 py-3 text-lg uppercase"
+            className="mt-1 w-full rounded-lg border text-black border-gray-300 px-4 py-3 text-lg uppercase"
           />
         </div>
 
         {isHoldings && (
           <div>
-            <label className="block text-sm font-medium text-gray-700">Shares</label>
+            <label className="block text-sm text-black font-medium text-gray-700">Shares</label>
             <input
               type="number"
               value={shares}
@@ -74,7 +74,7 @@ export default function AddStockForm() {
               placeholder="100"
               min="0"
               step="0.01"
-              className="mt-1 w-full rounded-lg border border-gray-300 px-4 py-3 text-lg"
+              className="mt-1 w-full rounded-lg text-black border border-gray-300 px-4 py-3 text-lg"
             />
           </div>
         )}
@@ -87,7 +87,7 @@ export default function AddStockForm() {
               onChange={() => setIsHoldings(true)}
               className="mr-2"
             />
-            <span className="font-medium">Add to Holdings</span>
+            <span className="font-medium text-black">Add to Holdings</span>
           </label>
           <label className="flex items-center cursor-pointer">
             <input
@@ -96,7 +96,7 @@ export default function AddStockForm() {
               onChange={() => setIsHoldings(false)}
               className="mr-2"
             />
-            <span className="font-medium">Add to Watchlist</span>
+            <span className="font-medium text-black">Add to Watchlist</span>
           </label>
         </div>
 

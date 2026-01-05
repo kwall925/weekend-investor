@@ -6,9 +6,9 @@ export default function Home() {
     <main className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-gray-900">Weekend Investor</h1>
+          <h1 className="text-4xl font-bold text-gray-900">OwnShares</h1>
           <p className="mt-4 text-lg text-gray-600">
-            One email every Friday. Zero noise during the week.
+            Be your own broker, Build your own wealth
           </p>
         </div>
         

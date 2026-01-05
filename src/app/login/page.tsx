@@ -32,7 +32,7 @@ export default function Login() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-gray-50">
       <div className="w-full max-w-md space-y-8 rounded-xl bg-white p-8 shadow">
-        <h2 className="text-3xl font-bold text-center">Welcome back</h2>
+        <h2 className="text-3xl font-bold text-center text-black">Welcome back</h2>
         
         <form onSubmit={handleLogin} className="space-y-6">
           <input
@@ -41,7 +41,7 @@ export default function Login() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full rounded-lg border border-gray-300 px-4 py-3"
+            className="w-full rounded-lg border border-gray-300 text-black px-4 py-3"
           />
           <input
             type="password"
@@ -49,7 +49,7 @@ export default function Login() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="w-full rounded-lg border border-gray-300 px-4 py-3"
+            className="w-full rounded-lg border border-gray-300 text-black px-4 py-3"
           />
           
           <button

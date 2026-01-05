@@ -5,6 +5,18 @@
   --foreground: #171717;
 }
 
+.text-primary {
+  @apply text-gray-900; /* near-black, for headings/main text */
+}
+
+.text-secondary {
+  @apply text-gray-800; /* dark gray, for body text */
+}
+
+.text-muted {
+  @apply text-gray-700; /* medium gray, for subtle text like dates, labels */
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

@@ -33,7 +33,7 @@ export default function Signup() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-gray-50">
       <div className="w-full max-w-md space-y-8 rounded-xl bg-white p-8 shadow">
-        <h2 className="text-3xl font-bold text-center">Create your account</h2>
+        <h2 className="text-3xl font-bold text-black text-center">Create your account</h2>
         
         <form onSubmit={handleSignup} className="space-y-6">
           <input
@@ -42,7 +42,7 @@ export default function Signup() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full rounded-lg border border-gray-300 px-4 py-3"
+            className="w-full text-black rounded-lg border border-gray-300 px-4 py-3"
           />
           <input
             type="password"
@@ -51,7 +51,7 @@ export default function Signup() {
             onChange={(e) => setPassword(e.target.value)}
             required
             minLength={6}
-            className="w-full rounded-lg border border-gray-300 px-4 py-3"
+            className="w-full rounded-lg text-black border border-gray-300 px-4 py-3"
           />
           
           <button
