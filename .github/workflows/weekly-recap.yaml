@@ -1,0 +1,31 @@
+name: Send Weekly Investor Recap
+
+on:
+  schedule:
+    # 21:30 UTC is 4:30 PM EST (during Standard Time)
+    # 16:30 is 4:30 PM, 5 is Friday
+    - cron: '30 21 * * 5'
+  workflow_dispatch: # Allows you to run it manually for testing
+
+jobs:
+  send-emails:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/checkout@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run email script
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          NEXT_PUBLIC_FINNHUB_KEY: ${{ secrets.NEXT_PUBLIC_FINNHUB_KEY }}
+        run: npx tsx scripts/send-weekly-email.ts

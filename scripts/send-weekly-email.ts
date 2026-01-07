@@ -13,173 +13,161 @@ const supabase = createClient(
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-async function getCurrentPrice(ticker: string): Promise<string | null> {
+const NOISE_SOURCES = ['Yahoo Entertainment', 'TMZ', 'Daily Mail', 'PopSugar', 'Guest Post', 'Rumor'];
+
+async function getCurrentPrice(ticker: string): Promise<{ price: string; high: string; low: string } | null> {
   try {
-    const res = await fetch(
-      `https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${process.env.NEXT_PUBLIC_FINNHUB_KEY}`
-    );
+    const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${process.env.NEXT_PUBLIC_FINNHUB_KEY}`);
     const data = await res.json();
-    return data.c ? Number(data.c).toFixed(2) : null;
-  } catch {
-    return null;
-  }
+    return data.c ? { price: Number(data.c).toFixed(2), high: Number(data.h).toFixed(2), low: Number(data.l).toFixed(2) } : null;
+  } catch { return null; }
 }
 
-// Get company name for relevance check
 async function getCompanyName(ticker: string): Promise<string | null> {
   try {
-    const res = await fetch(
-      `https://finnhub.io/api/v1/stock/profile2?symbol=${ticker}&token=${process.env.NEXT_PUBLIC_FINNHUB_KEY}`
-    );
+    const res = await fetch(`https://finnhub.io/api/v1/stock/profile2?symbol=${ticker}&token=${process.env.NEXT_PUBLIC_FINNHUB_KEY}`);
     const data = await res.json();
     return data?.name || null;
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
-// Marketaux news with strict relevance filter
-async function getRelevantNews(ticker: string) {
-  const token = process.env.MARKETAUX_API_TOKEN;
-  if (!token) return null;
-
+async function getHighQualityNews(ticker: string, companyName: string) {
   try {
-    const url = `https://api.marketaux.com/v1/news/all?symbols=${ticker}&filter_entities=true&language=en&api_token=${token}`;
+    const to = new Date().toISOString().split('T')[0];
+    const from = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const url = `https://finnhub.io/api/v1/company-news?symbol=${ticker}&from=${from}&to=${to}&token=${process.env.NEXT_PUBLIC_FINNHUB_KEY}`;
     const res = await fetch(url);
-    const json = await res.json();
+    const data = await res.json();
+    if (!Array.isArray(data)) return null;
 
-    if (!json.data || json.data.length === 0) return null;
-
-    const companyName = await getCompanyName(ticker);
-    const terms = [ticker.toLowerCase()];
-    if (companyName) {
-      const clean = companyName.toLowerCase().replace(/inc\.?|corp\.?|ltd\.?|llc\.?|plc/gi, '').trim();
-      terms.push(clean);
-      if (clean.includes(' ')) terms.push(clean.split(' ')[0]);
-    }
-
-    const filtered = json.data.filter((a: any) => {
-      const headline = a.title.toLowerCase();
-      return terms.some(term => headline.includes(term));
+    const cleanName = companyName.toLowerCase().replace(/inc\.?|corp\.?|ltd\.?|llc\.?|plc/gi, '').trim();
+    const filtered = data.filter((item: any) => {
+      const headline = item.headline.toLowerCase();
+      return !NOISE_SOURCES.some(noise => item.source.includes(noise)) && 
+             (headline.includes(ticker.toLowerCase()) || headline.includes(cleanName)) && 
+             item.summary.length > 40;
     });
 
-    return filtered.slice(0, 3).map((a: any) => ({
-      headline: a.title,
-      url: a.url,
-      source: a.source,
-    }));
-  } catch {
-    return null;
-  }
+    return filtered.slice(0, 5).map((item: any) => ({ headline: item.headline, url: item.url, source: item.source }));
+  } catch { return null; }
+}
+
+function generateStockRow(ticker: string, stats: any, news: any[], shares?: number, isWatchlist: boolean = false) {
+  const holdingValue = shares ? (Number(stats.price) * shares).toLocaleString(undefined, { minimumFractionDigits: 2 }) : null;
+
+  return `
+    <div style="background:#151515; border:1px solid #333; color:white; padding:24px; border-radius:16px; margin-bottom:24px;">
+      
+      <table width="100%" border="0" cellspacing="0" cellpadding="0">
+        <tr>
+          <td align="left">
+            <table border="0" cellspacing="0" cellpadding="0">
+              <tr>
+                <td style="padding-right: 16px;">
+                  <img src="https://finnhub.io/api/logo?symbol=${ticker}" width="44" height="44" style="border-radius:10px; background:white; display:block;" />
+                </td>
+                <td>
+                  <span style="font-size:22px; font-weight:bold; display:block;">${ticker}</span>
+                  ${isWatchlist ? `<span style="color:#666; font-size:10px; font-weight:bold; text-transform:uppercase; letter-spacing:1px;">Watchlist</span>` : ''}
+                </td>
+              </tr>
+            </table>
+          </td>
+          <td align="right">
+            <div style="font-size:22px; font-weight:bold;">$${stats.price}</div>
+            <div style="font-size:10px; color:#666; margin-top:2px;">7-day high: $${stats.high} • 7-day low: $${stats.low}</div>
+          </td>
+        </tr>
+      </table>
+
+      ${shares ? `
+        <div style="background:#222; border-radius:12px; padding:14px 18px; margin-top:20px;">
+          <table width="100%" border="0" cellspacing="0" cellpadding="0">
+            <tr>
+              <td align="left" style="font-size:14px; color:#999;">${shares.toLocaleString()} Shares</td>
+              <td align="right" style="font-size:18px; font-weight:bold; color:#10b981;">$${holdingValue}</td>
+            </tr>
+          </table>
+        </div>
+      ` : ''}
+      
+      <div style="margin-top:20px; border-top:1px solid #222; padding-top:16px;">
+        ${news.length > 0 ? news.map((n, index) => `
+          <div style="margin-bottom:16px; ${index === news.length - 1 ? '' : 'border-bottom:1px solid #222; padding-bottom:16px;'}">
+            <a href="${n.url}" style="color:#ffffff; text-decoration:none; font-size:14px; font-weight:500; display:block; line-height:1.4;">${n.headline}</a>
+            <span style="color:#666; font-size:11px; margin-top:4px; display:block;">via ${n.source}</span>
+          </div>
+        `).join('') : '<div style="color:#444; font-size:12px; padding:10px 0;">No significant news this week.</div>'}
+      </div>
+    </div>
+  `;
 }
 
 async function main() {
   const { data: users } = await supabase.auth.admin.listUsers();
-
   for (const user of users.users) {
     if (!user.email) continue;
-
     const { data: holdings } = await supabase.from('holdings').select('*').eq('user_id', user.id);
     const { data: watchlist } = await supabase.from('watchlist').select('*').eq('user_id', user.id);
 
-    let totalValue = 0;
-    const rows: string[] = [];
+    let totalVal = 0;
+    let sections: string[] = [];
 
-    // Holdings
     for (const h of holdings || []) {
-      const priceStr = await getCurrentPrice(h.ticker);
-      if (!priceStr) continue;
-
-      const price = Number(priceStr);
-      const value = price * Number(h.shares);
-      totalValue += value;
-
-      const news = await getRelevantNews(h.ticker);
-
-      rows.push(`
-        <div style="background:#1a1a1a;color:white;padding:24px;border-radius:24px;margin-bottom:16px;display:flex;align-items:center;gap:24px;box-shadow:0 10px 30px rgba(0,0,0,0.3);">
-          <img src="https://finnhub.io/api/logo?symbol=${h.ticker}" width="80" height="80" style="border-radius:20px;" onerror="this.style.display='none'" />
-          <div style="flex:1;">
-            <div style="font-size:36px;font-weight:bold;">${h.ticker}</div>
-          </div>
-          <div style="text-align:right;">
-            <div style="font-size:48px;font-weight:bold;">$${priceStr}</div>
-            <div style="color:#aaa;margin-top:8px;">
-              ${h.shares} shares = <strong style="font-size:32px;">$${value.toFixed(2)}</strong>
-            </div>
-          </div>
-        </div>
-        ${news && news.length > 0 ? `
-          <ul style="margin:16px 0 0;padding-left:40px;font-size:14px;list-style:none;">
-            ${news.map((n: any) => `
-              <li style="margin-bottom:8px;">
-                <a href="${n.url}" style="color:#60a5fa;text-decoration:none;">${n.headline}</a>
-                <span style="color:#888;margin-left:8px;">— ${n.source}</span>
-              </li>
-            `).join('')}
-          </ul>
-        ` : ''}
-      `);
+      const stats = await getCurrentPrice(h.ticker);
+      const name = await getCompanyName(h.ticker);
+      if (stats && name) {
+        totalVal += (Number(stats.price) * Number(h.shares));
+        const news = await getHighQualityNews(h.ticker, name);
+        sections.push(generateStockRow(h.ticker, stats, news || [], Number(h.shares)));
+      }
     }
 
-    // Watchlist
     for (const w of watchlist || []) {
-      const priceStr = await getCurrentPrice(w.ticker);
-      if (!priceStr) continue;
-
-      const news = await getRelevantNews(w.ticker);
-
-      rows.push(`
-        <div style="background:#1a1a1a;color:white;padding:24px;border-radius:24px;margin-bottom:16px;display:flex;align-items:center;gap:24px;box-shadow:0 10px 30px rgba(0,0,0,0.3);">
-          <img src="https://finnhub.io/api/logo?symbol=${w.ticker}" width="80" height="80" style="border-radius:20px;" onerror="this.style.display='none'" />
-          <div style="flex:1;">
-            <div style="font-size:36px;font-weight:bold;">${w.ticker} (Watchlist)</div>
-          </div>
-          <div style="font-size:48px;font-weight:bold;">$${priceStr}</div>
-        </div>
-        ${news && news.length > 0 ? `
-          <ul style="margin:16px 0 0;padding-left:40px;font-size:14px;list-style:none;">
-            ${news.map((n: any) => `
-              <li style="margin-bottom:8px;">
-                <a href="${n.url}" style="color:#60a5fa;text-decoration:none;">${n.headline}</a>
-                <span style="color:#888;margin-left:8px;">— ${n.source}</span>
-              </li>
-            `).join('')}
-          </ul>
-        ` : ''}
-      `);
+      const stats = await getCurrentPrice(w.ticker);
+      const name = await getCompanyName(w.ticker);
+      if (stats && name) {
+        const news = await getHighQualityNews(w.ticker, name);
+        sections.push(generateStockRow(w.ticker, stats, news || [], undefined, true));
+      }
     }
 
     const html = `
-      <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#111;color:white;padding:32px;">
-        <h1 style="font-size:32px;text-align:center;margin-bottom:32px;">Weekend Investor Recap</h1>
+      <!DOCTYPE html>
+      <html>
+        <body style="background-color:#050505; margin:0; padding:0; -webkit-text-size-adjust:none; text-size-adjust:none;">
+          <div style="max-width:600px; margin:0 auto; padding:40px 20px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">
+            
+            <div style="text-align:center; margin-bottom:40px;">
+              <h1 style="color:white; font-size:24px; font-weight:800; margin:0;">Weekend Investor</h1>
+              <p style="color:#666; font-size:12px; margin-top:8px;">Portfolio Insight • ${new Date().toLocaleDateString('en-US', {month: 'long', day: 'numeric', year: 'numeric'})}</p>
+            </div>
 
-        <div style="background:#0d9488;padding:32px;border-radius:24px;text-align:center;margin-bottom:40px;">
-          <p style="margin:0;font-size:24px;">Total Portfolio Value</p>
-          <p style="margin:16px 0 0;font-size:64px;font-weight:900;">
-            $${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-          </p>
-        </div>
+            <div style="background:linear-gradient(135deg, #10b981 0%, #059669 100%); padding:32px; border-radius:24px; text-align:center; margin-bottom:40px;">
+              <div style="color:rgba(255,255,255,0.7); font-size:14px; font-weight:600; text-transform:uppercase; letter-spacing:1px;">Net Worth Estimate</div>
+              <div style="color:white; font-size:48px; font-weight:900; margin-top:8px;">$${totalVal.toLocaleString(undefined, {minimumFractionDigits:2})}</div>
+            </div>
 
-        ${rows.join('')}
+            ${sections.join('')}
 
-        <p style="text-align:center;color:#888;margin-top:60px;">
-          See you next Friday.<br><em>Weekend Investor</em>
-        </p>
-      </div>
+            <div style="text-align:center; margin-top:40px; border-top:1px solid #222; padding-top:20px;">
+              <p style="color:#444; font-size:11px;">
+                <a href="https://weekend-investor.vercel.app" style="color:#10b981; text-decoration:none; font-weight:bold;">Update Portfolio</a>
+              </p>
+            </div>
+          </div>
+        </body>
+      </html>
     `;
 
     await resend.emails.send({
       from: 'Weekend Investor <recap@weekendinvestor.site>',
       to: user.email,
-      subject: `Your Weekly Recap — $${totalValue.toFixed(2)}`,
+      subject: `Weekly Recap: $${totalVal.toLocaleString(undefined, {minimumFractionDigits:2})}`,
       html,
     });
-
-    console.log(`Sent to ${user.email} — $${totalValue.toFixed(2)}`);
+    console.log(`Sent to ${user.email}`);
   }
-
-  console.log('All emails sent');
 }
 
 main().catch(console.error);
