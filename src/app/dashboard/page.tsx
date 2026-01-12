@@ -1,4 +1,3 @@
-// src/app/dashboard/page.tsx
 import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
@@ -25,6 +24,7 @@ export default async function Dashboard() {
     .eq('user_id', user.id)
     .order('ticker');
 
+  // Logic for total value remains the same
   let totalValue = 0;
   if (holdings) {
     for (const h of holdings) {
@@ -36,97 +36,91 @@ export default async function Dashboard() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-7xl px-6 py-12 space-y-16">
-        {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-4xl font-bold text-gray-900">Dashboard</h1>
-            <p className="mt-2 text-lg text-gray-600">{user.email}</p>
-          </div>
-          <Link
-            href="/activity"
-            className="text-blue-600 hover:text-blue-800 font-medium text-lg flex items-center gap-2"
-          >
-            Activity →
-          </Link>
-        </div>
-
-        {/* Total Value */}
-        <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-3xl p-10 text-white text-center shadow-xl">
-          <p className="text-xl opacity-90">Total Portfolio Value</p>
-          <p className="text-6xl font-bold mt-4">
-            ${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-          </p>
-        </div>
-
-        {/* Holdings */}
-        {holdings && holdings.length > 0 && (
-          <section className="space-y-6">
-            <h2 className="text-3xl font-bold text-gray-900">Your Holdings</h2>
-            <div className="space-y-5">
-              {await Promise.all(
-                holdings.map(async (h: any) => {
-                  const quote = await fetch(
-                    `https://finnhub.io/api/v1/quote?symbol=${h.ticker}&token=${process.env.NEXT_PUBLIC_FINNHUB_KEY}`
-                  ).then(r => r.json());
-                  return (
-                    <PriceCard
-                      key={h.id}
-                      ticker={h.ticker}
-                      shares={h.shares}
-                      id={h.id}
-                      isHolding={true}
-                      initialQuote={quote}
-                      initialNotes={h.notes}
-                    />
-                  );
-                })
-              )}
+    <main className="min-h-screen bg-[#050505] text-white selection:bg-white selection:text-black">
+      {/* Top Navigation */}
+      <nav className="border-b border-white/5 bg-black/50 backdrop-blur-xl sticky top-0 z-50">
+        <div className="mx-auto max-w-7xl px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="h-8 w-8 rounded-lg bg-white flex items-center justify-center">
+              <span className="text-black font-black text-sm">O</span>
             </div>
-          </section>
-        )}
-
-        {/* Watchlist */}
-        {watchlist && watchlist.length > 0 && (
-          <section className="space-y-6">
-            <h2 className="text-3xl font-bold text-gray-900">Your Watchlist</h2>
-            <div className="space-y-5">
-              {await Promise.all(
-                watchlist.map(async (w: any) => {
-                  const quote = await fetch(
-                    `https://finnhub.io/api/v1/quote?symbol=${w.ticker}&token=${process.env.NEXT_PUBLIC_FINNHUB_KEY}`
-                  ).then(r => r.json());
-                  return (
-                    <PriceCard
-                      key={w.id}
-                      ticker={w.ticker}
-                      id={w.id}
-                      isHolding={false}
-                      initialQuote={quote}
-                      initialNotes={w.notes}
-                    />
-                  );
-                })
-              )}
-            </div>
-          </section>
-        )}
-
-        {/* Empty State */}
-        {(!holdings || holdings.length === 0) && (!watchlist || watchlist.length === 0) && (
-          <div className="text-center py-20">
-            <p className="text-xl text-gray-500">Add stocks to get started</p>
+            <span className="font-semibold tracking-tight">Dashboard</span>
           </div>
-        )}
+          <div className="flex items-center gap-6">
+            <Link href="/activity" className="text-sm text-zinc-400 hover:text-white transition">
+              Activity
+            </Link>
+            <LogoutButton />
+          </div>
+        </div>
+      </nav>
 
-        {/* Add Stock — now at the bottom */}
-        <section className="mt-16">
-          <AddStockForm />
-        </section>
+      <div className="mx-auto max-w-7xl px-6 py-10">
+        <header className="mb-10">
+          <p className="text-sm font-medium text-zinc-500">{user.email}</p>
+          <h1 className="text-2xl font-bold tracking-tight">Portfolio Overview</h1>
+        </header>
 
-        <div className="flex justify-center pt-12">
-          <LogoutButton />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          {/* Main Content Area (8 columns) */}
+          <div className="lg:col-span-8 space-y-8">
+            
+            {/* Bento Box: Total Value */}
+            <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-zinc-900/20 p-10 backdrop-blur-sm">
+              <div className="absolute top-0 right-0 p-8 opacity-10">
+                <svg className="w-24 h-24" fill="currentColor" viewBox="0 0 24 24"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6h-6z"/></svg>
+              </div>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500">Net Worth Estimate</p>
+              <h2 className="mt-4 text-6xl font-black tracking-tighter">
+                ${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              </h2>
+            </div>
+
+            {/* Holdings Section */}
+            <section className="space-y-4">
+              <div className="flex items-center justify-between px-2">
+                <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">Current Holdings</h3>
+                <span className="text-xs text-zinc-600">{holdings?.length || 0} Assets</span>
+              </div>
+              <div className="grid grid-cols-1 gap-3">
+                {holdings && holdings.map(async (h: any) => {
+                  const quote = await fetch(`https://finnhub.io/api/v1/quote?symbol=${h.ticker}&token=${process.env.NEXT_PUBLIC_FINNHUB_KEY}`).then(r => r.json());
+                  return (
+                    <div key={h.id} className="group rounded-2xl border border-white/5 bg-zinc-900/40 p-1 hover:border-white/20 transition-all">
+                       <PriceCard ticker={h.ticker} shares={h.shares} id={h.id} isHolding={true} initialQuote={quote} initialNotes={h.notes} />
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          </div>
+
+          {/* Sidebar Area (4 columns) */}
+          <div className="lg:col-span-4 space-y-8">
+            
+            {/* Add Stock Bento */}
+            <div className="rounded-[2rem] border border-white/10 bg-zinc-900/40 p-6">
+              <h3 className="text-sm font-semibold mb-6">Manage Assets</h3>
+              <AddStockForm />
+            </div>
+
+            {/* Watchlist Section */}
+            <section className="space-y-4">
+               <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-500 px-2">Watchlist</h3>
+               <div className="space-y-3">
+                {watchlist && watchlist.map(async (w: any) => {
+                  const quote = await fetch(`https://finnhub.io/api/v1/quote?symbol=${w.ticker}&token=${process.env.NEXT_PUBLIC_FINNHUB_KEY}`).then(r => r.json());
+                  return (
+                    <div key={w.id} className="rounded-xl border border-white/5 bg-zinc-900/20 p-1">
+                      <PriceCard ticker={w.ticker} id={w.id} isHolding={false} initialQuote={quote} initialNotes={w.notes} />
+                    </div>
+                  );
+                })}
+               </div>
+            </section>
+          </div>
+
         </div>
       </div>
     </main>

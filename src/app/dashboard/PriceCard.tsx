@@ -1,164 +1,147 @@
-// src/app/dashboard/PriceCard.tsx
 'use client';
 
-import Image from 'next/image';
 import { useState } from 'react';
-import DeleteButton from './DeleteButton';
-import EditShares from './EditShares';
 import { createClient } from '@/utils/supabase/client';
+import { useRouter } from 'next/navigation';
 
-type Props = {
+interface PriceCardProps {
   ticker: string;
   shares?: number;
   id: string;
   isHolding: boolean;
-  initialQuote: { c: number; d: number; dp: number };
+  initialQuote: any;
   initialNotes?: string;
-};
+}
 
-export default function PriceCard({ 
-  ticker, 
-  shares, 
-  id, 
-  isHolding, 
-  initialQuote,
-  initialNotes = ''
-}: Props) {
-  const [logoError, setLogoError] = useState(false);
+export default function PriceCard({ ticker, shares: initialShares, id, isHolding, initialQuote, initialNotes }: PriceCardProps) {
+  const [shares, setShares] = useState(initialShares || 0);
+  const [notes, setNotes] = useState(initialNotes || '');
   const [showNotes, setShowNotes] = useState(false);
-  const [notes, setNotes] = useState(initialNotes);
-  const [isEditingNotes, setIsEditingNotes] = useState(false);
-  const [tempNotes, setTempNotes] = useState(initialNotes);
-
+  const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  
   const supabase = createClient();
+  const router = useRouter();
 
-  const price = initialQuote.c?.toFixed(2) || '—';
-  const change = initialQuote.d || 0;
-  const changePct = initialQuote.dp || 0;
-  const isUp = change >= 0;
-  const value = shares ? (Number(price) * shares).toFixed(2) : null;
+  const price = initialQuote?.c || 0;
+  const changePercent = initialQuote?.dp || 0;
+  const isPositive = changePercent >= 0;
 
-  const saveNotes = async () => {
+  const handleUpdate = async () => {
+    setLoading(true);
     const table = isHolding ? 'holdings' : 'watchlist';
+    const payload = isHolding ? { shares, notes } : { notes };
+    
     const { error } = await supabase
       .from(table)
-      .update({ notes: tempNotes })
+      .update(payload)
       .eq('id', id);
 
-    if (!error) {
-      setNotes(tempNotes);
-      setIsEditingNotes(false);
+    if (error) alert(error.message);
+    else {
+      setIsEditing(false);
+      router.refresh();
     }
+    setLoading(false);
+  };
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevents opening notes when clicking delete
+    if (!confirm(`Remove ${ticker}?`)) return;
+    setLoading(true);
+    const table = isHolding ? 'holdings' : 'watchlist';
+    await supabase.from(table).delete().eq('id', id);
+    router.refresh();
+    setLoading(false);
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-lg transition-shadow">
-      <div className="p-6">
-        <div className="flex items-center justify-between gap-8">
-          {/* Left */}
-          <div className="flex items-center gap-5">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden border border-gray-300">
-              {!logoError ? (
-                <Image
-                  src={`https://finnhub.io/api/logo?symbol=${ticker}`}
-                  alt={ticker}
-                  width={64}
-                  height={64}
-                  className="object-contain"
-                  unoptimized
-                  onError={() => setLogoError(true)}
-                />
-              ) : (
-                <span className="text-2xl font-bold text-gray-500">{ticker[0]}</span>
-              )}
-            </div>
-            <h3 className="text-2xl font-bold text-gray-900">{ticker}</h3>
+    <div className={`group flex flex-col border-b border-white/5 last:border-0 transition-all ${loading ? 'opacity-50' : ''}`}>
+      {/* Main Row */}
+      <div 
+        onClick={() => setShowNotes(!showNotes)}
+        className="flex cursor-pointer items-center justify-between px-5 py-5 hover:bg-white/[0.02]"
+      >
+        <div className="flex items-center gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-gradient-to-br from-zinc-800 to-black text-[13px] font-black tracking-tighter text-white">
+            {ticker.substring(0, 3)}
           </div>
-
-          {/* Center */}
-          <div className="text-center">
-            <div className="text-4xl font-bold text-gray-900">${price}</div>
-            <div className={`text-lg font-medium mt-1 ${isUp ? 'text-green-600' : 'text-red-600'}`}>
-              {isUp ? 'Up' : 'Down'} {Math.abs(change).toFixed(2)} ({changePct.toFixed(2)}%)
+          
+          <div>
+            <div className="flex items-center gap-2">
+              <h4 className="font-bold tracking-tight text-zinc-100">{ticker}</h4>
+              {notes && <div className="h-1 w-1 rounded-full bg-emerald-500" title="Has notes" />}
             </div>
-          </div>
-
-          {/* Right */}
-          <div className="bg-gray-100 rounded-2xl px-10 py-6 text-center min-w-52">
-            {shares !== undefined ? (
-              <>
-                <div className="text-lg font-medium text-gray-700">{shares} Shares</div>
-                <div className="text-2xl font-bold text-gray-900 mt-2">
-                  ${Number(value).toLocaleString()}
-                </div>
-              </>
-            ) : (
-              <div className="text-xl font-medium text-gray-600">Watchlist</div>
-            )}
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600">
+              {isHolding ? `${shares} Shares` : 'Watchlist'}
+            </p>
           </div>
         </div>
 
-        {/* Action Bar */}
-        <div className="mt-6 pt-5 border-t border-gray-200 flex justify-end items-center gap-4 text-sm">
-          {isHolding && shares !== undefined && <EditShares id={id} currentShares={shares} />}
-          <button
-            onClick={() => setShowNotes(!showNotes)}
-            className="text-blue-600 hover:text-blue-800 font-medium"
-          >
-            {showNotes ? 'Hide' : 'View'} Notes
-          </button>
-          <DeleteButton id={id} table={isHolding ? 'holdings' : 'watchlist'} />
-        </div>
-
-        {/* Notes Section */}
-        {showNotes && (
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            {isEditingNotes ? (
-              <div className="space-y-3">
-                <textarea
-                  value={tempNotes}
-                  onChange={(e) => setTempNotes(e.target.value)}
-                  rows={4}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none"
-                  placeholder="Add your private notes..."
-                />
-                <div className="flex gap-3 justify-end">
-                  <button
-                    onClick={saveNotes}
-                    className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
-                  >
-                    Save
-                  </button>
-                  <button
-                    onClick={() => {
-                      setTempNotes(notes);
-                      setIsEditingNotes(false);
-                    }}
-                    className="px-5 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 font-medium"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex justify-between items-start">
-                <p className="text-gray-700 whitespace-pre-wrap flex-1">
-                  {notes || <span className="text-gray-400 italic">No notes yet</span>}
-                </p>
-                <button
-                  onClick={() => {
-                    setTempNotes(notes);
-                    setIsEditingNotes(true);
-                  }}
-                  className="ml-4 text-blue-600 hover:text-blue-800 text-sm font-medium"
-                >
-                  Edit
-                </button>
-              </div>
-            )}
+        <div className="flex items-center gap-6">
+          <div className="text-right">
+            <p className="text-sm font-bold tracking-tight text-white">
+              ${price.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </p>
+            <p className={`text-[10px] font-black ${isPositive ? 'text-emerald-500' : 'text-red-400'}`}>
+              {isPositive ? '↑' : '↓'} {Math.abs(changePercent).toFixed(2)}%
+            </p>
           </div>
-        )}
+          {/* Subtle Chevron to indicate expandable */}
+          <svg className={`w-4 h-4 text-zinc-700 transition-transform ${showNotes ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
       </div>
+
+      {/* Expandable Notes & Edit Section */}
+      {showNotes && (
+        <div className="bg-black/40 px-5 pb-6 pt-2 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="grid grid-cols-1 gap-4">
+            {isHolding && (
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 ml-1">Total Shares</label>
+                <input 
+                  type="number"
+                  value={shares}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) => { setShares(Number(e.target.value)); setIsEditing(true); }}
+                  className="w-full rounded-xl border border-white/5 bg-zinc-900/50 px-4 py-2 text-sm text-white outline-none focus:border-white/20"
+                />
+              </div>
+            )}
+            
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 ml-1">Investment Notes</label>
+              <textarea 
+                value={notes}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => { setNotes(e.target.value); setIsEditing(true); }}
+                placeholder="Why did you buy this? What's your exit plan?"
+                className="w-full min-h-[100px] rounded-xl border border-white/5 bg-zinc-900/50 px-4 py-3 text-sm text-white placeholder-zinc-700 outline-none focus:border-white/20 resize-none"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between pt-2">
+            <button 
+              onClick={handleDelete}
+              className="text-[10px] font-bold uppercase tracking-widest text-red-900 hover:text-red-500 transition-colors"
+            >
+              Remove Asset
+            </button>
+            
+            {isEditing && (
+              <button 
+                onClick={(e) => { e.stopPropagation(); handleUpdate(); }}
+                className="rounded-lg bg-white px-4 py-2 text-[11px] font-bold text-black hover:bg-zinc-200 transition-all"
+              >
+                Save Changes
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

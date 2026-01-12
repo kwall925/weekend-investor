@@ -1,67 +1,115 @@
-// src/app/signup/page.tsx
 'use client';
 
 import { useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  
   const supabase = createClient();
   const router = useRouter();
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setMessage(null);
 
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: `${location.origin}/dashboard` },
     });
 
     if (error) {
-      alert(error.message);
+      setMessage({ type: 'error', text: error.message });
+      setLoading(false);
     } else {
-      alert('Check your email for the confirmation link!');
+      setMessage({ type: 'success', text: 'Check your email for the confirmation link!' });
+      setTimeout(() => router.push('/login'), 3000);
     }
-    setLoading(false);
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md space-y-8 rounded-xl bg-white p-8 shadow">
-        <h2 className="text-3xl font-bold text-black text-center">Create your account</h2>
-        
-        <form onSubmit={handleSignup} className="space-y-6">
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full text-black rounded-lg border border-gray-300 px-4 py-3"
-          />
-          <input
-            type="password"
-            placeholder="Password (min 6 characters)"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={6}
-            className="w-full rounded-lg text-black border border-gray-300 px-4 py-3"
-          />
-          
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-lg bg-black py-3 text-white font-medium hover:bg-gray-800 disabled:opacity-50"
-          >
-            {loading ? 'Creating...' : 'Sign Up Free'}
-          </button>
-        </form>
+    <main className="relative flex min-h-screen flex-col items-center justify-center bg-[#050505] p-6 text-white">
+      {/* Background Radial Glow */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-zinc-900/20 via-transparent to-transparent pointer-events-none" />
+
+      <div className="relative w-full max-w-sm space-y-8">
+        <div className="text-center space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight">Create Account</h1>
+          <p className="text-sm text-zinc-400">Join the next generation of weekend investors</p>
+        </div>
+
+        <div className="rounded-3xl border border-white/10 bg-zinc-900/30 p-8 backdrop-blur-md shadow-2xl">
+          <form onSubmit={handleSignup} className="space-y-5">
+            {message && (
+              <div className={`rounded-lg border p-3 text-center text-xs transition-all ${
+                message.type === 'error' 
+                  ? 'border-red-500/20 bg-red-500/10 text-red-400' 
+                  : 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400'
+              }`}>
+                {message.text}
+              </div>
+            )}
+            
+            <div className="space-y-1.5">
+              <label htmlFor="email" className="text-xs font-medium text-zinc-500 ml-1">
+                Email Address
+              </label>
+              <input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="block w-full rounded-xl border border-white/5 bg-white/5 px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none transition focus:border-white/20 focus:bg-white/10"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="password" className="text-xs font-medium text-zinc-500 ml-1">
+                Create Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="block w-full rounded-xl border border-white/5 bg-white/5 px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none transition focus:border-white/20 focus:bg-white/10"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="relative mt-2 flex w-full items-center justify-center overflow-hidden rounded-xl bg-white px-8 py-3 text-sm font-semibold text-black transition-all hover:bg-zinc-200 active:scale-[0.98] disabled:opacity-50"
+            >
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Creating account...
+                </span>
+              ) : 'Get Started'}
+            </button>
+          </form>
+        </div>
+
+        <p className="text-center text-sm text-zinc-500">
+          Already have an account?{' '}
+          <Link href="/login" className="text-white hover:underline font-medium">
+            Log in
+          </Link>
+        </p>
       </div>
     </main>
   );

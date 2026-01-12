@@ -1,4 +1,3 @@
-// src/app/dashboard/AddStockForm.tsx
 'use client';
 
 import { useState } from 'react';
@@ -42,72 +41,84 @@ export default function AddStockForm() {
     } else {
       setTicker('');
       setShares('');
+      // Restoring your exact reload logic to ensure data shows up immediately
       window.location.reload();
     }
     setLoading(false);
   };
 
   return (
-    <div className="rounded-xl bg-white p-8 shadow-lg">
-      <h2 className="mb-6 text-2xl text-black font-semibold">Add a Stock</h2>
+    <div className="rounded-[2rem] border border-white/10 bg-zinc-900/40 p-8 backdrop-blur-md">
+      <h2 className="mb-6 text-xl font-bold tracking-tight text-white">Add Asset</h2>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label className="block text-sm text-black font-medium text-gray-700">Ticker</label>
-          <input
-            type="text"
-            value={ticker}
-            onChange={(e) => setTicker(e.target.value)}
-            placeholder="AAPL"
-            required
-            className="mt-1 w-full rounded-lg border text-black border-gray-300 px-4 py-3 text-lg uppercase"
-          />
+        {/* Toggle between Holdings and Watchlist */}
+        <div className="flex p-1 rounded-xl bg-black/50 border border-white/5">
+          <button
+            type="button"
+            onClick={() => setIsHoldings(true)}
+            className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${
+              isHoldings ? 'bg-zinc-800 text-white shadow-lg' : 'text-zinc-600 hover:text-zinc-400'
+            }`}
+          >
+            Holdings
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsHoldings(false)}
+            className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${
+              !isHoldings ? 'bg-zinc-800 text-white shadow-lg' : 'text-zinc-600 hover:text-zinc-400'
+            }`}
+          >
+            Watchlist
+          </button>
         </div>
 
-        {isHoldings && (
+        <div className="space-y-4">
           <div>
-            <label className="block text-sm text-black font-medium text-gray-700">Shares</label>
+            <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-1.5 ml-1">
+              Ticker Symbol
+            </label>
             <input
-              type="number"
-              value={shares}
-              onChange={(e) => setShares(e.target.value)}
-              placeholder="100"
-              min="0"
-              step="0.01"
-              className="mt-1 w-full rounded-lg text-black border border-gray-300 px-4 py-3 text-lg"
+              type="text"
+              value={ticker}
+              onChange={(e) => setTicker(e.target.value)}
+              placeholder="AAPL"
+              required
+              className="w-full rounded-xl border border-white/5 bg-black/40 px-4 py-3 text-sm text-white placeholder-zinc-700 outline-none focus:border-white/20 transition-all uppercase"
             />
           </div>
-        )}
 
-        <div className="flex gap-6">
-          <label className="flex items-center cursor-pointer">
-            <input
-              type="radio"
-              checked={isHoldings}
-              onChange={() => setIsHoldings(true)}
-              className="mr-2"
-            />
-            <span className="font-medium text-black">Add to Holdings</span>
-          </label>
-          <label className="flex items-center cursor-pointer">
-            <input
-              type="radio"
-              checked={!isHoldings}
-              onChange={() => setIsHoldings(false)}
-              className="mr-2"
-            />
-            <span className="font-medium text-black">Add to Watchlist</span>
-          </label>
+          {isHoldings && (
+            <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+              <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-1.5 ml-1">
+                Number of Shares
+              </label>
+              <input
+                type="number"
+                value={shares}
+                onChange={(e) => setShares(e.target.value)}
+                placeholder="0.00"
+                min="0"
+                step="0.01"
+                className="w-full rounded-xl border border-white/5 bg-black/40 px-4 py-3 text-sm text-white placeholder-zinc-700 outline-none focus:border-white/20 transition-all"
+              />
+            </div>
+          )}
         </div>
 
-        {error && <p className="text-red-600 font-medium">{error}</p>}
+        {error && (
+          <p className="text-xs font-bold text-red-400 bg-red-400/10 border border-red-400/20 rounded-lg p-3">
+            {error}
+          </p>
+        )}
 
         <button
           type="submit"
           disabled={loading || !ticker.trim()}
-          className="w-full rounded-lg bg-black py-4 text-white font-semibold text-lg hover:bg-gray-800 disabled:opacity-50 transition"
+          className="w-full rounded-xl bg-white py-4 text-[11px] font-black uppercase tracking-[0.2em] text-black hover:bg-zinc-200 disabled:opacity-50 transition active:scale-[0.98]"
         >
-          {loading ? 'Adding...' : 'Add Stock'}
+          {loading ? 'Adding to Ledger...' : 'Add to Portfolio'}
         </button>
       </form>
     </div>

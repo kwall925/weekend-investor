@@ -1,4 +1,3 @@
-// src/app/dashboard/LogoutButton.tsx
 'use client';
 
 import { createClient } from '@/utils/supabase/client';
@@ -10,15 +9,16 @@ export default function LogoutButton() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    router.push('/');
+    router.refresh();
+    router.push('/login');
   };
 
   return (
     <button
       onClick={handleLogout}
-      className="rounded-lg bg-red-600 px-6 py-3 text-white font-medium hover:bg-red-700 transition"
+      className="text-xs font-bold uppercase tracking-[0.15em] text-zinc-500 transition-colors hover:text-white"
     >
-      Log Out
+      Sign Out
     </button>
   );
 }
