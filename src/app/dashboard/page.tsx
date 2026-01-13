@@ -50,6 +50,11 @@ export default async function Dashboard() {
             <Link href="/activity" className="text-sm text-zinc-400 hover:text-white transition">
               Activity
             </Link>
+            <Link 
+              href="/account" 
+              className="text-xs font-bold uppercase tracking-widest text-zinc-500 hover:text-white transition-colors">
+              Settings
+            </Link>
             <LogoutButton />
           </div>
         </div>
