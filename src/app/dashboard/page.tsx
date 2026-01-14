@@ -47,7 +47,7 @@ export default async function Dashboard() {
             <span className="font-semibold tracking-tight">Dashboard</span>
           </div>
           <div className="flex items-center gap-6">
-            <Link href="/activity" className="text-sm text-zinc-400 hover:text-white transition">
+            <Link href="/activity" className="text-xs font-bold uppercase tracking-widest text-zinc-500 hover:text-white transition-colors">
               Activity
             </Link>
             <Link 

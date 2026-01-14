@@ -44,7 +44,7 @@ export default function Home() {
 
         {/* Minimalist Footer Note */}
         <p className="text-center text-[11px] uppercase tracking-[0.2em] text-zinc-600">
-          Built for the weekend investor
+          Manage your own portfolio
         </p>
       </div>
     </main>
