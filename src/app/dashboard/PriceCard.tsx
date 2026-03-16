@@ -126,7 +126,7 @@ export default function PriceCard({ ticker, shares: initialShares, id, isHolding
           {/* Inside the expanded section of PriceCard.tsx */}
   <div className="flex items-center justify-between pt-2">
   <div className="flex items-center gap-4">
-    {/* Yahoo Finance Link */}
+    {/* Yahoo Finance Link * /}
     <a
       href={`https://finance.yahoo.com/quote/${ticker}`}
       target="_blank"

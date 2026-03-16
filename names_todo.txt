@@ -10,18 +10,9 @@ SharePilot
 OwnShares
 
 
+
+Implement
 --------------------------
+- write your hypothesis for your stock
 
-Tutorial
-
-Step 1. Create your account
-
-Step 2. Add Your Holdings
-
-Step 3. Add Your Watchlist
-
-Step 4. Make Notes
-
-Step 5. View Activity
-
-Step 6. Manage your Portfolio via Email
+- get a weekly AI report on the strength of your hypothesis.
